@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>odata-ui — Native OData Explorer, Query Builder &amp; Metadata Advisor</title>
+    <meta
+      name="description"
+      content="A swagger-ui style explorer built natively for OData: metadata browser, relationship diagram, visual query builder, and CSDL metadata advisor."
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-brand">
+        <span class="site-logo" aria-hidden="true"></span>
+        <div>
+          <strong>odata-ui</strong>
+          <span class="site-tagline">Native OData Explorer &amp; Metadata Advisor</span>
+        </div>
+      </div>
+
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#explorer" class="nav-link active" id="nav-explorer">Live Explorer</a>
+        <a href="#docs" class="nav-link" id="nav-docs">Docs</a>
+        <a href="#metadata-guide" class="nav-link" id="nav-guide">Better OData Metadata</a>
+        <a
+          href="https://github.com/Tiberriver256/odata-ui"
+          class="nav-link"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub ↗
+        </a>
+      </nav>
+    </header>
+
+    <div class="preset-bar" id="preset-bar">
+      <span class="preset-label">Public OData Presets:</span>
+      <button
+        type="button"
+        class="preset-btn active"
+        data-url="https://services.odata.org/TripPinRESTierService"
+      >
+        TripPin RESTier (v4)
+      </button>
+      <button
+        type="button"
+        class="preset-btn"
+        data-url="https://services.odata.org/V4/TripPinServiceRW"
+      >
+        TripPin V4 RW (Capabilities &amp; Containment)
+      </button>
+      <button
+        type="button"
+        class="preset-btn"
+        data-url="https://services.odata.org/V3/OData/OData.svc"
+      >
+        OData V3 Sample (Associations)
+      </button>
+    </div>
+
+    <main class="site-main">
+      <section id="view-explorer" class="view-explorer">
+        <div id="explorer"></div>
+      </section>
+
+      <section id="view-docs" class="view-docs" hidden></section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+<!--
+  Explicit sketch for a Svelte 5 wrapper around `@odata-ui/core`.
+  Not compiled as part of the workspace until a Svelte package build is needed.
+-->
+<script lang="ts">
+  import { mount, type ODataUIInstance, type ODataUIOptions } from '@odata-ui/core';
+
+  let {
+    url,
+    metadata,
+    headers,
+    requestInterceptor,
+    theme = 'auto',
+  }: Omit<ODataUIOptions, 'dom_id' | 'domNode'> = $props();
+
+  let host: HTMLDivElement;
+
+  $effect(() => {
+    const instance: ODataUIInstance = mount(host, {
+      url,
+      metadata,
+      headers,
+      requestInterceptor,
+      theme,
+    });
+    return () => instance.unmount();
+  });
+</script>
+
+<div bind:this={host} style="height: 100%; width: 100%;"></div>

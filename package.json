@@ -1,0 +1,25 @@
+{
+  "name": "odata-ui-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @odata-ui/demo dev",
+    "build": "pnpm --filter @odata-ui/core build && pnpm --filter @odata-ui/react build && pnpm --filter @odata-ui/vue build && pnpm --filter @odata-ui/demo build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "oxlint --config .oxlintrc.json packages apps",
+    "format": "oxfmt --config .oxfmtrc.json",
+    "format:check": "oxfmt --config .oxfmtrc.json --check"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "happy-dom": "^21.0.4",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  },
+  "packageManager": "pnpm@12.21.0"
+}

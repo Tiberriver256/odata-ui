@@ -1,0 +1,262 @@
+:root {
+  --site-bg: #f1f5f9;
+  --site-surface: #ffffff;
+  --site-border: #e2e8f0;
+  --site-text: #0f172a;
+  --site-muted: #475569;
+  --site-accent: #2563eb;
+  --site-accent-soft: #eff6ff;
+  --site-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --site-bg: #020617;
+    --site-surface: #0f172a;
+    --site-border: #1e293b;
+    --site-text: #f8fafc;
+    --site-muted: #94a3b8;
+    --site-accent: #60a5fa;
+    --site-accent-soft: rgba(59, 130, 246, 0.16);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--site-bg);
+  color: var(--site-text);
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--site-surface);
+  border-bottom: 1px solid var(--site-border);
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.site-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #2563eb, #0284c7);
+  display: inline-block;
+}
+
+.site-tagline {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12.5px;
+  color: var(--site-muted);
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nav-link {
+  padding: 5px 11px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--site-muted);
+}
+
+.nav-link:hover {
+  background: var(--site-bg);
+  color: var(--site-text);
+}
+
+.nav-link.active {
+  background: var(--site-accent-soft);
+  color: var(--site-accent);
+}
+
+.preset-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: var(--site-surface);
+  border-bottom: 1px solid var(--site-border);
+}
+
+.preset-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--site-muted);
+}
+
+.preset-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--site-border);
+  background: var(--site-bg);
+  color: var(--site-text);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.preset-btn:hover {
+  border-color: var(--site-accent);
+}
+
+.preset-btn.active {
+  background: var(--site-accent);
+  border-color: var(--site-accent);
+  color: #ffffff;
+}
+
+.site-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-explorer {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  display: flex;
+}
+
+#explorer {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.view-docs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 20px 64px;
+}
+
+.docs-container {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.docs-hero {
+  background: var(--site-surface);
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  padding: 24px 26px;
+  margin-bottom: 24px;
+}
+
+.docs-hero h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.docs-hero p {
+  margin: 0;
+  color: var(--site-muted);
+}
+
+.docs-card {
+  background: var(--site-surface);
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+
+.docs-card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.docs-card h3 {
+  margin: 16px 0 6px;
+  font-size: 14.5px;
+}
+
+.docs-card pre {
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--site-bg);
+  border: 1px solid var(--site-border);
+  font-family: var(--site-mono);
+  font-size: 12.5px;
+  overflow-x: auto;
+}
+
+.docs-card code {
+  font-family: var(--site-mono);
+  font-size: 12.5px;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.docs-table th,
+.docs-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--site-border);
+}
+
+.docs-table th {
+  color: var(--site-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.docs-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: none;
+  background: var(--site-accent);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}

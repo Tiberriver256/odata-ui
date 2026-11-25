@@ -1,0 +1,22 @@
+{
+  "name": "@odata-ui/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework-agnostic OData metadata browser, relationship diagram, query builder, and metadata advisor.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/odata-ui.js",
+  "module": "./dist/odata-ui.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/odata-ui.js"
+    },
+    "./standalone": "./dist/odata-ui.standalone.js"
+  },
+  "scripts": {
+    "build": "vite build && vite build --config vite.standalone.config.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

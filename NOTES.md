@@ -8,8 +8,8 @@ Someone who already drops swagger-ui into an ASP.NET Core app should be able to 
 
 ```js
 ODataUI({
-  url: "https://services.odata.org/TripPinRESTierService",
-  dom_id: "explorer",
+  url: 'https://services.odata.org/TripPinRESTierService',
+  dom_id: 'explorer',
 });
 ```
 

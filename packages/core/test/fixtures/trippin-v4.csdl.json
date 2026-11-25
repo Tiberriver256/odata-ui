@@ -1,0 +1,110 @@
+{
+  "$Version": "4.01",
+  "$EntityContainer": "Trippin.Container",
+  "$Reference": {
+    "https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.json": {
+      "$Include": [{ "$Namespace": "Org.OData.Core.V1", "$Alias": "Core" }]
+    }
+  },
+  "Trippin": {
+    "$Alias": "TP",
+    "PersonGender": {
+      "$Kind": "EnumType",
+      "Male": 0,
+      "Female": 1,
+      "Unknown": 2
+    },
+    "City": {
+      "$Kind": "ComplexType",
+      "Name": { "$Type": "Edm.String" },
+      "CountryRegion": { "$Type": "Edm.String" }
+    },
+    "Location": {
+      "$Kind": "ComplexType",
+      "Address": { "$Type": "Edm.String" },
+      "City": { "$Type": "self.City" }
+    },
+    "Person": {
+      "$Kind": "EntityType",
+      "$Key": ["UserName"],
+      "@Org.OData.Core.V1.Description": "A traveler in the TripPin service.",
+      "UserName": {
+        "$Type": "Edm.String",
+        "$Nullable": false,
+        "@Org.OData.Core.V1.Immutable": true
+      },
+      "FirstName": { "$Type": "Edm.String", "$Nullable": false },
+      "Emails": { "$Collection": true, "$Type": "Edm.String" },
+      "Gender": { "$Type": "self.PersonGender", "$Nullable": false },
+      "HomeAddress": { "$Type": "self.Location" },
+      "Friends": {
+        "$Kind": "NavigationProperty",
+        "$Collection": true,
+        "$Type": "self.Person"
+      },
+      "Trips": {
+        "$Kind": "NavigationProperty",
+        "$Collection": true,
+        "$Type": "self.Trip",
+        "$ContainsTarget": true
+      }
+    },
+    "Employee": {
+      "$Kind": "EntityType",
+      "$BaseType": "self.Person",
+      "Cost": { "$Type": "Edm.Int64", "$Nullable": false }
+    },
+    "Trip": {
+      "$Kind": "EntityType",
+      "$Key": ["TripId"],
+      "TripId": { "$Type": "Edm.Int32", "$Nullable": false },
+      "Name": { "$Type": "Edm.String" },
+      "Budget": { "$Type": "Edm.Single", "$Nullable": false }
+    },
+    "GetNearestAirport": [
+      {
+        "$Kind": "Function",
+        "$Parameter": [
+          { "$Name": "lat", "$Type": "Edm.Double", "$Nullable": false },
+          { "$Name": "lon", "$Type": "Edm.Double", "$Nullable": false }
+        ],
+        "$ReturnType": { "$Type": "Edm.String" }
+      }
+    ],
+    "ResetDataSource": [
+      {
+        "$Kind": "Action",
+        "@Org.OData.Core.V1.Description": "Resets the sample data."
+      }
+    ],
+    "Container": {
+      "$Kind": "EntityContainer",
+      "People": {
+        "$Collection": true,
+        "$Type": "self.Person",
+        "$NavigationPropertyBinding": {
+          "Friends": "People"
+        },
+        "@Org.OData.Core.V1.Description": "All travelers",
+        "@Org.OData.Capabilities.V1.FilterRestrictions": {
+          "Filterable": true
+        }
+      },
+      "Me": {
+        "$Kind": "Singleton",
+        "$Type": "self.Person",
+        "$NavigationPropertyBinding": {
+          "Friends": "People"
+        }
+      },
+      "GetNearestAirport": {
+        "$Kind": "FunctionImport",
+        "$Function": "self.GetNearestAirport"
+      },
+      "ResetDataSource": {
+        "$Kind": "ActionImport",
+        "$Action": "self.ResetDataSource"
+      }
+    }
+  }
+}
