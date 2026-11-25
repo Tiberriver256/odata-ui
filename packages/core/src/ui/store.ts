@@ -36,6 +36,13 @@ export interface CustomHeaderRow {
   value: string;
 }
 
+export interface ExpandedNavDrawerState {
+  navName: string;
+  navUrl: string;
+  targetTypeName?: string;
+  result: QueryExecutionResult;
+}
+
 export interface ExplorerState {
   inputUrl: string;
   serviceRoot: string;
@@ -63,6 +70,9 @@ export interface ExplorerState {
   queryAst: QueryAst | null;
   editableUrl: string;
   urlManuallyEdited: boolean;
+  queryBuilderCollapsed: boolean;
+  expandedNestedKeys: string[];
+  expandedNavDrawers: Record<string, ExpandedNavDrawerState>;
   queryLoading: boolean;
   queryError: string | null;
   queryResult: QueryExecutionResult | null;
@@ -181,6 +191,9 @@ export class ExplorerStore {
       queryAst: null,
       editableUrl: '',
       urlManuallyEdited: false,
+      queryBuilderCollapsed: false,
+      expandedNestedKeys: [],
+      expandedNavDrawers: {},
       queryLoading: false,
       queryError: null,
       queryResult: null,
@@ -239,6 +252,9 @@ export class ExplorerStore {
       queryAst,
       editableUrl,
       urlManuallyEdited: false,
+      queryBuilderCollapsed: false,
+      expandedNestedKeys: [],
+      expandedNavDrawers: {},
       queryResult: null,
       queryError: null,
       pageStack: [],
@@ -256,6 +272,55 @@ export class ExplorerStore {
       editableUrl: printed.readableUrl,
       urlManuallyEdited: false,
     });
+  }
+
+  /**
+   * Update AST and computed URL without triggering a full DOM re-render.
+   * Keeps active text inputs focused and prevents blur-triggered re-renders from swallowing clicks.
+   */
+  updateQueryAstSilent(ast: QueryAst): string {
+    const model = this.state.model;
+    const printed = printQuery(this.state.serviceRoot, ast, {
+      version: model?.version ?? '4.0',
+    });
+    this.state = {
+      ...this.state,
+      queryAst: ast,
+      editableUrl: printed.readableUrl,
+      urlManuallyEdited: false,
+    };
+    return printed.readableUrl;
+  }
+
+  updateEditableUrlSilent(url: string): void {
+    this.state = {
+      ...this.state,
+      editableUrl: url,
+      urlManuallyEdited: true,
+    };
+  }
+
+  setNestedKeyExpanded(key: string, expanded: boolean): void {
+    const set = new Set(this.state.expandedNestedKeys);
+    if (expanded) set.add(key);
+    else set.delete(key);
+    this.state = {
+      ...this.state,
+      expandedNestedKeys: [...set],
+    };
+  }
+
+  setExpandedNavDrawer(rowKey: string, drawer: ExpandedNavDrawerState | null): void {
+    const next = { ...this.state.expandedNavDrawers };
+    if (drawer) {
+      next[rowKey] = drawer;
+    } else {
+      delete next[rowKey];
+    }
+    this.state = {
+      ...this.state,
+      expandedNavDrawers: next,
+    };
   }
 
   getEffectiveExtraHeaders(): Record<string, string> {

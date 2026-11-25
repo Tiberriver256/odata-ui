@@ -218,13 +218,13 @@ function renderEntityTypeDetails(
     containerTarget
       ? el(
           'span',
-          { class: 'oui-badge oui-badge-accent' },
+          { class: 'oui-badge' },
           containerTarget.kind === 'singleton' ? 'Singleton' : 'EntitySet',
         )
-      : el('span', { class: 'oui-badge oui-badge-accent' }, 'EntityType'),
-    et.abstract ? el('span', { class: 'oui-badge oui-badge-warning' }, 'Abstract') : null,
-    et.openType ? el('span', { class: 'oui-badge oui-badge-nav' }, 'OpenType') : null,
-    et.hasStream ? el('span', { class: 'oui-badge oui-badge-tip' }, 'Media Stream') : null,
+      : el('span', { class: 'oui-badge' }, 'EntityType'),
+    et.abstract ? el('span', { class: 'oui-badge' }, 'Abstract') : null,
+    et.openType ? el('span', { class: 'oui-badge' }, 'OpenType') : null,
+    et.hasStream ? el('span', { class: 'oui-badge' }, 'Media Stream') : null,
     keys.size > 0
       ? el('span', { class: 'oui-badge oui-badge-key' }, `Key: ${[...keys].join(', ')}`)
       : null,
@@ -453,7 +453,7 @@ function renderEntityTypeDetails(
             el(
               'span',
               {
-                class: `oui-badge ${op.kind === 'action' ? 'oui-badge-warning' : 'oui-badge-nav'}`,
+                class: `oui-badge${op.kind === 'action' ? ' oui-badge-warning' : ''}`,
               },
               op.kind.toUpperCase(),
             ),
@@ -630,7 +630,7 @@ export function renderDetailsView(state: ExplorerState, store: ExplorerStore): H
             el(
               'div',
               { style: 'margin-top:6px;' },
-              el('span', { class: 'oui-badge oui-badge-nav' }, 'ComplexType'),
+              el('span', { class: 'oui-badge' }, 'ComplexType'),
             ),
           ),
         ),
@@ -690,9 +690,9 @@ export function renderDetailsView(state: ExplorerState, store: ExplorerStore): H
             el(
               'div',
               { style: 'display:flex; gap:6px; margin-top:6px;' },
-              el('span', { class: 'oui-badge oui-badge-tip' }, 'EnumType'),
+              el('span', { class: 'oui-badge' }, 'EnumType'),
               el('span', { class: 'oui-badge' }, en.underlyingType),
-              en.isFlags ? el('span', { class: 'oui-badge oui-badge-warning' }, 'Flags') : null,
+              en.isFlags ? el('span', { class: 'oui-badge' }, 'Flags') : null,
             ),
           ),
         ),
@@ -773,14 +773,12 @@ export function renderDetailsView(state: ExplorerState, store: ExplorerStore): H
               el(
                 'span',
                 {
-                  class: `oui-badge ${op.kind === 'action' ? 'oui-badge-warning' : 'oui-badge-nav'}`,
+                  class: `oui-badge${op.kind === 'action' ? ' oui-badge-warning' : ''}`,
                 },
                 op.kind === 'action' ? 'POST Action' : 'GET Function',
               ),
               el('span', { class: 'oui-badge' }, op.isBound ? 'Bound' : 'Unbound'),
-              op.isComposable
-                ? el('span', { class: 'oui-badge oui-badge-success' }, 'Composable')
-                : null,
+              op.isComposable ? el('span', { class: 'oui-badge' }, 'Composable') : null,
             ),
           ),
           runBtn,

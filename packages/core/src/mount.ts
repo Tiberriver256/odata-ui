@@ -28,6 +28,7 @@ export interface ODataUIMountOptions {
   headers?: HeadersProvider;
   requestInterceptor?: RequestInterceptor;
   theme?: ThemeMode;
+  onThemeChange?: (resolvedTheme: 'light' | 'dark') => void;
   fetch?: typeof globalThis.fetch;
 }
 
@@ -68,6 +69,10 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
   let metadataAbort: AbortController | null = null;
   let queryAbort: AbortController | null = null;
   let unmounted = false;
+  let lastNotifiedTheme: 'light' | 'dark' | null = null;
+  let prevActiveTab: ActiveTab | null = null;
+  let prevSelectedKey: string | null = null;
+  let scrollToResultsPending = false;
 
   const loadFromUrl = async (url: string): Promise<void> => {
     metadataAbort?.abort();
@@ -128,6 +133,8 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
     store.setState({
       queryLoading: true,
       queryError: null,
+      expandedNestedKeys: [],
+      expandedNavDrawers: {},
       pageStack: nextStack,
     });
 
@@ -143,6 +150,7 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
         signal: queryAbort.signal,
       });
       if (unmounted) return;
+      scrollToResultsPending = true;
       store.setState({
         queryLoading: false,
         queryResult: res,
@@ -151,6 +159,7 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
     } catch (err) {
       if (unmounted) return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
+      scrollToResultsPending = true;
       store.setState({
         queryLoading: false,
         queryError: err instanceof Error ? err.message : String(err),
@@ -162,6 +171,35 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
     const state = store.getState();
     root.setAttribute('data-theme', state.resolvedTheme);
     element.setAttribute('data-theme', state.resolvedTheme);
+
+    if (state.resolvedTheme !== lastNotifiedTheme) {
+      lastNotifiedTheme = state.resolvedTheme;
+      options.onThemeChange?.(state.resolvedTheme);
+      if (typeof CustomEvent !== 'undefined') {
+        element.dispatchEvent(
+          new CustomEvent('odata-ui:theme-change', {
+            detail: { theme: state.theme, resolvedTheme: state.resolvedTheme },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    }
+
+    // Preserve scroll positions across in-place re-renders (only reset when tab or selected item changes)
+    const prevContent = root.querySelector('.oui-content') as HTMLElement | null;
+    const prevTree = root.querySelector('.oui-tree-scroll') as HTMLElement | null;
+    const savedContentScrollTop = prevContent?.scrollTop ?? 0;
+    const savedContentScrollLeft = prevContent?.scrollLeft ?? 0;
+    const savedTreeScrollTop = prevTree?.scrollTop ?? 0;
+
+    const selectedKey = state.selected ? `${state.selected.kind}:${state.selected.id}` : null;
+    const shouldResetContentScroll =
+      prevActiveTab !== null &&
+      (prevActiveTab !== state.activeTab ||
+        (state.activeTab === 'details' && prevSelectedKey !== selectedKey));
+    prevActiveTab = state.activeTab;
+    prevSelectedKey = selectedKey;
 
     // Preserve focus on text/search inputs if the user is actively typing
     const activeEl = shadow.activeElement as HTMLInputElement | null;
@@ -321,6 +359,26 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
     backdrop?.addEventListener('click', () => store.setState({ sidebarOpenMobile: false }));
 
     root.appendChild(el('div', { class: 'oui-body' }, sidebar, backdrop, main));
+
+    const nextTree = root.querySelector('.oui-tree-scroll') as HTMLElement | null;
+    if (nextTree && savedTreeScrollTop > 0) {
+      nextTree.scrollTop = savedTreeScrollTop;
+    }
+
+    if (scrollToResultsPending && state.activeTab === 'query') {
+      scrollToResultsPending = false;
+      const resultsBar = content.querySelector('.oui-results-bar') as HTMLElement | null;
+      const errorBanner = content.querySelector('.oui-results-error') as HTMLElement | null;
+      const target = resultsBar ?? errorBanner;
+      if (target) {
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+    } else if (!shouldResetContentScroll) {
+      content.scrollTop = savedContentScrollTop;
+      content.scrollLeft = savedContentScrollLeft;
+    }
 
     if (focusInfo) {
       const selector = focusInfo.ariaLabel

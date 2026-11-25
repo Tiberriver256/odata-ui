@@ -1,5 +1,6 @@
 import type { DiagnosticSeverity } from '../model/types.js';
 import { copyToClipboard, el } from './dom.js';
+import { icon } from './icons.js';
 import type { ExplorerState, ExplorerStore, Selection } from './store.js';
 
 let activeSeverityFilter: DiagnosticSeverity | 'all' = 'all';
@@ -109,16 +110,12 @@ export function renderAdvisorView(state: ExplorerState, store: ExplorerStore): H
         }, 1400);
       });
 
+      const chev = icon('chevron-down', 13);
+      chev.classList.add('oui-details-chevron');
       const details = el(
         'details',
-        { style: 'margin-top:8px;' },
-        el(
-          'summary',
-          {
-            style: 'cursor:pointer; font-size:12px; font-weight:600; color:var(--odata-ui-accent);',
-          },
-          'Example CSDL improvement',
-        ),
+        { class: 'oui-advisor-details' },
+        el('summary', {}, chev, 'Example CSDL improvement'),
         el('div', { style: 'margin-top:6px;' }, copyBtn, el('pre', { class: 'oui-pre' }, snippet)),
       );
       exampleBlock = details;

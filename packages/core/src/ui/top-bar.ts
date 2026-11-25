@@ -104,7 +104,7 @@ export function renderTopBar(
   const versionBadge = state.model
     ? el(
         'span',
-        { class: 'oui-badge oui-badge-accent', title: `Parsed as ${state.model.sourceFormat}` },
+        { class: 'oui-badge', title: `Parsed as ${state.model.sourceFormat}` },
         `v${state.model.version}`,
       )
     : null;

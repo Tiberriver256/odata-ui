@@ -61,70 +61,119 @@ function collectColumns(
   return ordered;
 }
 
-function renderValueCell(value: unknown, depth = 0): HTMLElement {
-  if (value === null || value === undefined) {
-    return el('td', { class: 'oui-null' }, '—');
-  }
-  if (typeof value === 'number') {
-    return el('td', { class: 'oui-num' }, String(value));
-  }
-  if (typeof value === 'boolean') {
-    return el(
-      'td',
-      {},
-      el('span', { class: `oui-badge ${value ? 'oui-badge-success' : ''}` }, String(value)),
+function buildNestedContent(value: unknown, depth: number): HTMLElement {
+  const isArr = Array.isArray(value);
+  const items = isArr ? value : [value];
+  const container = el('div');
+
+  if (depth >= 3) {
+    container.appendChild(renderHighlightedJson(value));
+  } else if (isArr && items.every((i) => typeof i !== 'object' || i === null)) {
+    container.textContent =
+      items.length === 0 ? '(empty)' : items.map((i) => String(i ?? '—')).join(', ');
+  } else {
+    const nestedRows = items.filter((i): i is Record<string, unknown> =>
+      Boolean(i && typeof i === 'object'),
     );
-  }
-  if (typeof value === 'string') {
-    return el('td', {}, value);
+    if (nestedRows.length === 0) {
+      container.textContent = '(empty)';
+    } else {
+      container.appendChild(
+        renderDataTable(nestedRows, undefined, undefined, undefined, undefined, depth + 1),
+      );
+    }
   }
 
-  // Array or nested object -> inline expandable widget
+  return container;
+}
+
+function renderValueCell(
+  value: unknown,
+  colName: string,
+  rowKey: string,
+  totalCols: number,
+  parentRow: HTMLTableRowElement,
+  depth = 0,
+  state?: ExplorerState,
+  store?: ExplorerStore,
+): { td: HTMLElement; initialDrawerRow?: HTMLTableRowElement } {
+  if (value === null || value === undefined) {
+    return { td: el('td', { class: 'oui-null' }, '—') };
+  }
+  if (typeof value === 'number') {
+    return { td: el('td', { class: 'oui-num' }, String(value)) };
+  }
+  if (typeof value === 'boolean') {
+    return {
+      td: el('td', {}, el('span', { class: 'oui-badge' }, String(value))),
+    };
+  }
+  if (typeof value === 'string') {
+    return { td: el('td', {}, value) };
+  }
+
+  // Array or nested object -> full-width expandable row below parent row (readable on desktop & mobile)
   const td = el('td');
   const isArr = Array.isArray(value);
   const items = isArr ? value : [value];
-  const summaryLabel = isArr
+  const closedLabel = isArr
     ? `${items.length} item${items.length === 1 ? '' : 's'} ▸`
     : `{ ${Object.keys(value as Record<string, unknown>)
         .filter((k) => !isODataMetaKey(k))
         .slice(0, 2)
         .join(', ')}… } ▸`;
+  const openLabel = closedLabel.replace('▸', '▾');
+  const expandKey = `${depth}:${rowKey}:${colName}`;
 
-  const trigger = el('button', { type: 'button', class: 'oui-nested-trigger' }, summaryLabel);
-  let expandedBox: HTMLElement | null = null;
+  const trigger = el('button', { type: 'button', class: 'oui-nested-trigger' }, closedLabel);
+  let drawerRow: HTMLTableRowElement | null = null;
+
+  const createDrawerRow = (): HTMLTableRowElement => {
+    const closeBtn = el('button', { type: 'button', class: 'oui-btn oui-btn-sm' }, 'Close');
+    closeBtn.addEventListener('click', () => {
+      drawerRow?.remove();
+      drawerRow = null;
+      trigger.textContent = closedLabel;
+      store?.setNestedKeyExpanded(expandKey, false);
+    });
+
+    const headTitle = isArr
+      ? `${colName} (${items.length} item${items.length === 1 ? '' : 's'})`
+      : colName;
+    const drawerContent = el(
+      'div',
+      { class: 'oui-nested-drawer' },
+      el('div', { class: 'oui-nested-row-head' }, el('strong', {}, headTitle), closeBtn),
+      buildNestedContent(value, depth),
+    );
+    const cell = el('td', { colspan: totalCols }, drawerContent);
+    return el('tr', { class: 'oui-nested-row', 'data-nested-key': expandKey }, cell);
+  };
 
   trigger.addEventListener('click', () => {
-    if (expandedBox) {
-      expandedBox.remove();
-      expandedBox = null;
-      trigger.textContent = summaryLabel;
+    if (drawerRow) {
+      drawerRow.remove();
+      drawerRow = null;
+      trigger.textContent = closedLabel;
+      store?.setNestedKeyExpanded(expandKey, false);
       return;
     }
-    trigger.textContent = summaryLabel.replace('▸', '▾');
-    expandedBox = el('div', { class: 'oui-nested-box' });
-
-    if (depth >= 3) {
-      expandedBox.appendChild(renderHighlightedJson(value));
-    } else if (isArr && items.every((i) => typeof i !== 'object' || i === null)) {
-      expandedBox.textContent =
-        items.length === 0 ? '(empty)' : items.map((i) => String(i ?? '—')).join(', ');
-    } else {
-      const nestedRows = items.filter((i): i is Record<string, unknown> =>
-        Boolean(i && typeof i === 'object'),
-      );
-      if (nestedRows.length === 0) {
-        expandedBox.textContent = '(empty)';
-      } else {
-        expandedBox.appendChild(
-          renderDataTable(nestedRows, undefined, undefined, undefined, undefined, depth + 1),
-        );
-      }
-    }
-    td.appendChild(expandedBox);
+    trigger.textContent = openLabel;
+    drawerRow = createDrawerRow();
+    parentRow.after(drawerRow);
+    store?.setNestedKeyExpanded(expandKey, true);
   });
 
   td.appendChild(trigger);
-  return td;
+
+  let initialDrawerRow: HTMLTableRowElement | undefined;
+  if (depth === 0 && state?.expandedNestedKeys.includes(expandKey)) {
+    trigger.textContent = openLabel;
+    drawerRow = createDrawerRow();
+    initialDrawerRow = drawerRow;
+  }
+
+  return { td, initialDrawerRow };
 }
 
 function computeNavLinkForRow(
@@ -174,23 +223,105 @@ function renderDataTable(
           (n) => !rows.some((r) => r[n.name] !== undefined),
         )
       : [];
+  const hasRelatedCol = Boolean(unexpandedNavs.length > 0 && state?.serviceRoot);
+  const totalCols = cols.length + (hasRelatedCol ? 1 : 0);
 
   const theadRow = el('tr', {}, ...cols.map((c) => el('th', {}, c)));
-  if (unexpandedNavs.length > 0 && state?.serviceRoot) {
+  if (hasRelatedCol) {
     theadRow.appendChild(el('th', {}, 'Related'));
   }
 
   const tbody = el('tbody');
 
-  for (const row of rows) {
+  rows.forEach((row, rowIdx) => {
+    const rowKey = String(rowIdx);
     const tr = el('tr');
+    const pendingDrawers: HTMLTableRowElement[] = [];
+
     for (const col of cols) {
-      tr.appendChild(renderValueCell(row[col], depth));
+      const { td, initialDrawerRow } = renderValueCell(
+        row[col],
+        col,
+        rowKey,
+        totalCols,
+        tr,
+        depth,
+        state,
+        store,
+      );
+      tr.appendChild(td);
+      if (initialDrawerRow) {
+        pendingDrawers.push(initialDrawerRow);
+      }
     }
 
-    if (unexpandedNavs.length > 0 && entityType && state && store && callbacks) {
+    if (hasRelatedCol && entityType && state && store && callbacks) {
       const navTd = el('td');
       let drawerRow: HTMLTableRowElement | null = null;
+
+      const populateNavDrawer = (
+        cell: HTMLElement,
+        navName: string,
+        navUrl: string,
+        res: QueryExecutionResult,
+        targetTypeName?: string,
+      ) => {
+        cell.textContent = '';
+        const openBtn = el(
+          'button',
+          { type: 'button', class: 'oui-btn oui-btn-sm' },
+          'Open URL in Builder',
+        );
+        openBtn.addEventListener('click', () => callbacks.onOpenNavUrl(navUrl));
+        const closeBtn = el('button', { type: 'button', class: 'oui-btn oui-btn-sm' }, 'Close');
+        closeBtn.addEventListener('click', () => {
+          drawerRow?.remove();
+          drawerRow = null;
+          store.setExpandedNavDrawer(rowKey, null);
+        });
+
+        const header = el(
+          'div',
+          { class: 'oui-nested-row-head' },
+          el(
+            'strong',
+            {},
+            `${navName} (${res.rows.length} row${res.rows.length === 1 ? '' : 's'})`,
+          ),
+          el('div', { style: 'display:flex; gap:5px; flex-wrap:wrap;' }, openBtn, closeBtn),
+        );
+
+        const bodyEl =
+          res.rows.length > 0
+            ? renderDataTable(
+                res.rows,
+                state.model && targetTypeName
+                  ? findEntityType(state.model, targetTypeName, entityType.namespace)
+                  : undefined,
+                state,
+                store,
+                callbacks,
+                depth + 1,
+              )
+            : el('span', { class: 'oui-null' }, 'No related rows returned.');
+
+        cell.appendChild(el('div', { class: 'oui-nested-drawer' }, header, bodyEl));
+      };
+
+      // Restore cached on-demand nav drawer across Grid / Raw JSON / Split toggles
+      const savedNav = state.expandedNavDrawers[rowKey];
+      if (savedNav) {
+        const cell = el('td', { colspan: totalCols });
+        drawerRow = el('tr', { class: 'oui-nested-row', 'data-nav': savedNav.navName }, cell);
+        populateNavDrawer(
+          cell,
+          savedNav.navName,
+          savedNav.navUrl,
+          savedNav.result,
+          savedNav.targetTypeName,
+        );
+        pendingDrawers.push(drawerRow);
+      }
 
       for (const nav of unexpandedNavs) {
         const navUrl = computeNavLinkForRow(row, nav.name, state, entityType);
@@ -205,12 +336,16 @@ function renderDataTable(
           if (drawerRow && drawerRow.dataset.nav === nav.name) {
             drawerRow.remove();
             drawerRow = null;
+            store.setExpandedNavDrawer(rowKey, null);
             return;
           }
           drawerRow?.remove();
-          const cell = el('td', { colspan: cols.length + 1 });
-          cell.textContent = `Loading ${nav.name}…`;
-          drawerRow = el('tr', { 'data-nav': nav.name }, cell);
+          const cell = el(
+            'td',
+            { colspan: totalCols },
+            el('div', { class: 'oui-nested-drawer' }, `Loading ${nav.name}…`),
+          );
+          drawerRow = el('tr', { class: 'oui-nested-row', 'data-nav': nav.name }, cell);
           tr.after(drawerRow);
 
           try {
@@ -220,50 +355,24 @@ function renderDataTable(
               requestInterceptor: state.requestInterceptor,
               version: state.model?.version,
             });
-            cell.textContent = '';
-            const openBtn = el(
-              'button',
-              { type: 'button', class: 'oui-btn oui-btn-sm' },
-              'Open URL in Builder',
-            );
-            openBtn.addEventListener('click', () => callbacks.onOpenNavUrl(navUrl));
-            const closeBtn = el('button', { type: 'button', class: 'oui-btn oui-btn-sm' }, 'Close');
-            closeBtn.addEventListener('click', () => {
-              drawerRow?.remove();
-              drawerRow = null;
+            store.setExpandedNavDrawer(rowKey, {
+              navName: nav.name,
+              navUrl,
+              targetTypeName: nav.type,
+              result: res,
             });
-
-            const header = el(
-              'div',
-              {
-                style:
-                  'display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;',
-              },
-              el(
-                'strong',
-                {},
-                `${nav.name} (${res.rows.length} row${res.rows.length === 1 ? '' : 's'})`,
-              ),
-              el('div', { style: 'display:flex; gap:5px;' }, openBtn, closeBtn),
-            );
-            cell.appendChild(header);
-            if (res.rows.length > 0) {
-              const targetEt = state.model
-                ? findEntityType(state.model, nav.type, entityType.namespace)
-                : undefined;
-              cell.appendChild(
-                renderDataTable(res.rows, targetEt, state, store, callbacks, depth + 1),
-              );
-            } else {
-              cell.appendChild(el('span', { class: 'oui-null' }, 'No related rows returned.'));
-            }
+            populateNavDrawer(cell, nav.name, navUrl, res, nav.type);
           } catch (err) {
             cell.textContent = '';
             cell.appendChild(
               el(
                 'div',
-                { class: 'oui-banner oui-banner-error', style: 'margin:0;' },
-                err instanceof Error ? err.message : String(err),
+                { class: 'oui-nested-drawer' },
+                el(
+                  'div',
+                  { class: 'oui-banner oui-banner-error', style: 'margin:0;' },
+                  err instanceof Error ? err.message : String(err),
+                ),
               ),
             );
           }
@@ -275,7 +384,10 @@ function renderDataTable(
     }
 
     tbody.appendChild(tr);
-  }
+    for (const dRow of pendingDrawers) {
+      tbody.appendChild(dRow);
+    }
+  });
 
   return el(
     'div',
@@ -292,7 +404,9 @@ export function renderResultsView(
   const wrap = el('div');
 
   if (state.queryError) {
-    wrap.appendChild(el('div', { class: 'oui-banner oui-banner-error' }, state.queryError));
+    wrap.appendChild(
+      el('div', { class: 'oui-banner oui-banner-error oui-results-error' }, state.queryError),
+    );
   }
 
   const res: QueryExecutionResult | null = state.queryResult;

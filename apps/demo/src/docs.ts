@@ -149,19 +149,22 @@ import { ODataUI } from '@odata-ui/vue';
 
       <section class="docs-section">
         <h2>Options reference</h2>
-        <table class="docs-table">
-          <thead>
-            <tr><th>Option</th><th>Type</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>url</code></td><td><code>string</code></td><td>Service root or <code>/$metadata</code> URL. Redirected session roots are adopted automatically.</td></tr>
-            <tr><td><code>metadata</code></td><td><code>string</code></td><td>Raw XML (v2/v3/v4) or JSON CSDL (v4/v4.01) document for offline browsing.</td></tr>
-            <tr><td><code>dom_id</code> / <code>domNode</code></td><td><code>string | HTMLElement</code></td><td>Mount container when invoking <code>ODataUI(options)</code>.</td></tr>
-            <tr><td><code>headers</code></td><td><code>Record | () =&gt; Record | Promise</code></td><td>Custom HTTP headers forwarded on metadata and data requests.</td></tr>
-            <tr><td><code>requestInterceptor</code></td><td><code>(req) =&gt; req | Promise</code></td><td>Modify outgoing fetch requests prior to dispatch.</td></tr>
-            <tr><td><code>theme</code></td><td><code>'light' | 'dark' | 'auto'</code></td><td>Color theme; defaults to <code>'auto'</code>.</td></tr>
-          </tbody>
-        </table>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr><th>Option</th><th>Type</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>url</code></td><td><code>string</code></td><td>Service root or <code>/$metadata</code> URL. Redirected session roots are adopted automatically.</td></tr>
+              <tr><td><code>metadata</code></td><td><code>string</code></td><td>Raw XML (v2/v3/v4) or JSON CSDL (v4/v4.01) document for offline browsing.</td></tr>
+              <tr><td><code>dom_id</code> / <code>domNode</code></td><td><code>string | HTMLElement</code></td><td>Mount container when invoking <code>ODataUI(options)</code>.</td></tr>
+              <tr><td><code>headers</code></td><td><code>Record | () =&gt; Record | Promise</code></td><td>Custom HTTP headers forwarded on metadata and data requests.</td></tr>
+              <tr><td><code>request<wbr>Interceptor</code></td><td><code>(req) =&gt; req | Promise</code></td><td>Modify outgoing fetch requests prior to dispatch.</td></tr>
+              <tr><td><code>theme</code></td><td><code>'light' | 'dark' | 'auto'</code></td><td>Color theme; defaults to <code>'auto'</code>.</td></tr>
+              <tr><td><code>on<wbr>Theme<wbr>Change</code></td><td><code>(theme: 'light' | 'dark') =&gt; void</code></td><td>Optional callback fired on mount and whenever the resolved theme changes.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="docs-section">
@@ -171,8 +174,8 @@ import { ODataUI } from '@odata-ui/vue';
           explorer without forking styles:
         </p>
         <pre><code>#explorer {
-  --odata-ui-accent: #0d746e;
-  --odata-ui-accent-hover: #0a5c57;
+  --odata-ui-accent: #0a6661;
+  --odata-ui-accent-hover: #07504c;
   --odata-ui-radius: 6px;
 }</code></pre>
       </section>

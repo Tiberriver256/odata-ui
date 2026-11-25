@@ -144,6 +144,36 @@ export function buildDiagramGraph(model: ODataModel, options: BuildDiagramOption
     }
   }
 
+  if (options.showComplex) {
+    for (const ct of allComplex) {
+      if (options.showInheritance && ct.baseType) {
+        const baseCt = findComplexType(model, ct.baseType, ct.namespace);
+        if (baseCt && allNodes.has(baseCt.fullName)) {
+          rawEdges.push({
+            id: `inh:${ct.fullName}->${baseCt.fullName}`,
+            source: ct.fullName,
+            target: baseCt.fullName,
+            kind: 'inheritance',
+            label: 'extends',
+          });
+        }
+      }
+      for (const prop of ct.properties) {
+        if (isEdmType(prop.type)) continue;
+        const targetCt = findComplexType(model, prop.type, ct.namespace);
+        if (!targetCt || !allNodes.has(targetCt.fullName)) continue;
+        rawEdges.push({
+          id: `ct:${ct.fullName}.${prop.name}->${targetCt.fullName}`,
+          source: ct.fullName,
+          target: targetCt.fullName,
+          kind: 'complex',
+          label: prop.name,
+          cardinality: prop.isCollection ? '*' : '1',
+        });
+      }
+    }
+  }
+
   // Filter down to focus neighborhood when requested
   let includedIds: Set<string>;
   if (options.focusType) {
@@ -208,7 +238,7 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
   );
 
   // Initial deterministic concentric placement
-  const radius = Math.max(260, n * 48);
+  const radius = Math.max(185, n * 34);
   ordered.forEach((node, idx) => {
     if (idx === 0 && n > 3) {
       node.x = 0;
@@ -216,13 +246,13 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
     } else {
       const angle = (2 * Math.PI * idx) / Math.max(1, n - (n > 3 ? 1 : 0));
       node.x = Math.cos(angle) * radius;
-      node.y = Math.sin(angle) * radius * 0.78;
+      node.y = Math.sin(angle) * radius * 0.82;
     }
   });
 
   const byId = new Map(nodes.map((node) => [node.id, node]));
-  const idealDist = 310;
-  const iterations = Math.min(180, Math.max(80, n * 14));
+  const idealDist = 250;
+  const iterations = Math.min(180, Math.max(90, n * 14));
 
   for (let iter = 0; iter < iterations; iter++) {
     const temp = 1 - iter / iterations;
@@ -247,8 +277,8 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
           dist = Math.hypot(dx, dy);
         }
         const rep = (idealDist * idealDist) / dist;
-        const rx = (dx / dist) * rep * 0.16;
-        const ry = (dy / dist) * rep * 0.16;
+        const rx = (dx / dist) * rep * 0.14;
+        const ry = (dy / dist) * rep * 0.14;
         fx.set(a.id, (fx.get(a.id) ?? 0) + rx);
         fy.set(a.id, (fy.get(a.id) ?? 0) + ry);
         fx.set(b.id, (fx.get(b.id) ?? 0) - rx);
@@ -264,8 +294,8 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const dist = Math.max(1, Math.hypot(dx, dy));
-      const targetLen = edge.kind === 'inheritance' ? 230 : idealDist;
-      const pull = ((dist - targetLen) / idealDist) * 28;
+      const targetLen = edge.kind === 'inheritance' ? 195 : idealDist;
+      const pull = ((dist - targetLen) / idealDist) * 32;
       const ax = (dx / dist) * pull;
       const ay = (dy / dist) * pull;
       fx.set(a.id, (fx.get(a.id) ?? 0) + ax);
@@ -275,10 +305,10 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
     }
 
     // Gentle gravity toward origin + clamp displacement
-    const maxStep = 34 * (0.2 + temp);
+    const maxStep = 30 * (0.2 + temp);
     for (const node of nodes) {
-      const vx = (fx.get(node.id) ?? 0) - node.x * 0.015;
-      const vy = (fy.get(node.id) ?? 0) - node.y * 0.015;
+      const vx = (fx.get(node.id) ?? 0) - node.x * 0.025;
+      const vy = (fy.get(node.id) ?? 0) - node.y * 0.025;
       const mag = Math.hypot(vx, vy);
       if (mag > 0.01) {
         const scale = Math.min(mag, maxStep) / mag;
@@ -289,8 +319,8 @@ export function runDeterministicForceLayout(nodes: DiagramNode[], edges: Diagram
   }
 
   // Deterministic AABB anti-overlap pass so entity cards never collide
-  const padX = 48;
-  const padY = 44;
+  const padX = 40;
+  const padY = 38;
   for (let pass = 0; pass < 30; pass++) {
     let moved = false;
     for (let i = 0; i < n; i++) {

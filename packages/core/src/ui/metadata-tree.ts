@@ -9,6 +9,7 @@ import {
 } from '../model/helpers.js';
 import type { ODataModel } from '../model/types.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import {
   createQueryAstForTarget,
   type ExplorerState,
@@ -26,6 +27,8 @@ interface TreeEntry {
   };
 }
 
+const collapsedGroups = new Set<string>();
+
 export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): HTMLElement {
   const sidebar = el('aside', { class: 'oui-sidebar' });
 
@@ -40,7 +43,21 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
     store.setState({ treeFilter: searchInput.value });
   });
 
-  sidebar.appendChild(el('div', { class: 'oui-sidebar-search' }, searchInput));
+  const closeBtn = el(
+    'button',
+    {
+      type: 'button',
+      class: 'oui-btn oui-btn-icon oui-btn-ghost oui-sidebar-close-btn',
+      'aria-label': 'Close schema tree',
+      title: 'Close schema tree',
+    },
+    icon('x', 15),
+  );
+  closeBtn.addEventListener('click', () => {
+    store.setState({ sidebarOpenMobile: false });
+  });
+
+  sidebar.appendChild(el('div', { class: 'oui-sidebar-search' }, searchInput, closeBtn));
 
   const scroll = el('div', { class: 'oui-tree-scroll' });
   sidebar.appendChild(scroll);
@@ -132,7 +149,12 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
       : group.items;
     if (filtered.length === 0) continue;
 
+    const isCollapsed = !query && collapsedGroups.has(group.title);
     const list = el('ul', { class: 'oui-tree-items' });
+    if (isCollapsed) {
+      list.style.display = 'none';
+    }
+
     for (const item of filtered) {
       const isActive =
         state.selected?.kind === item.selection.kind && state.selected?.id === item.selection.id;
@@ -145,7 +167,7 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
           ? el(
               'span',
               {
-                class: `oui-badge ${item.sublabel === 'ACT' || item.sublabel === 'POST' ? 'oui-badge-warning' : 'oui-badge-nav'}`,
+                class: `oui-badge${item.sublabel === 'ACT' || item.sublabel === 'POST' ? ' oui-badge-warning' : ''}`,
               },
               item.sublabel,
             )
@@ -187,14 +209,26 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
       list.appendChild(li);
     }
 
+    const chevron = icon('chevron-down', 12);
+    chevron.classList.add('oui-tree-chevron');
+
     const header = el(
       'button',
-      { type: 'button', class: 'oui-tree-group-header' },
-      el('span', {}, group.title),
+      {
+        type: 'button',
+        class: `oui-tree-group-header${isCollapsed ? ' collapsed' : ''}`,
+        'aria-expanded': isCollapsed ? 'false' : 'true',
+      },
+      el('span', { class: 'oui-tree-group-left' }, chevron, group.title),
       el('span', { class: 'oui-badge' }, filtered.length),
     );
     header.addEventListener('click', () => {
-      list.style.display = list.style.display === 'none' ? '' : 'none';
+      const willCollapse = list.style.display !== 'none';
+      list.style.display = willCollapse ? 'none' : '';
+      header.classList.toggle('collapsed', willCollapse);
+      header.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+      if (willCollapse) collapsedGroups.add(group.title);
+      else collapsedGroups.delete(group.title);
     });
 
     scroll.appendChild(el('div', { class: 'oui-tree-group' }, header, list));
