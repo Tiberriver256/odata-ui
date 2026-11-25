@@ -80,4 +80,16 @@ describe('HTTP client — session redirect adoption & JSON envelopes', () => {
     expect(single.isSingleValue).toBe(true);
     expect(single.rows).toEqual([{ UserName: 'russellwhyte', FirstName: 'Russell' }]);
   });
+
+  it('surfaces actionable CORS recovery instructions when browser fetch fails', async () => {
+    const failingFetch = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    await expect(
+      fetchMetadata('https://private.example.org/odata', {
+        fetch: failingFetch as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow(/Access-Control-Allow-Origin/i);
+  });
 });

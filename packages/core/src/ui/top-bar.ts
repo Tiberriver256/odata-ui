@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import type { ExplorerState, ExplorerStore } from './store.js';
 
 export interface TopBarCallbacks {
@@ -16,7 +17,7 @@ export function renderTopBar(
   const urlInput = el('input', {
     type: 'url',
     class: 'oui-input oui-input-mono oui-url-input',
-    placeholder: 'https://services.odata.org/TripPinRESTierService',
+    placeholder: 'Service root or /$metadata URL',
     value: state.inputUrl,
     'aria-label': 'OData service root or $metadata URL',
   });
@@ -25,7 +26,7 @@ export function renderTopBar(
     'button',
     {
       type: 'submit',
-      class: 'oui-btn oui-btn-primary',
+      class: 'oui-btn oui-btn-primary oui-url-submit',
       disabled: state.loadingMetadata,
     },
     state.loadingMetadata ? 'Loading…' : 'Load',
@@ -63,10 +64,14 @@ export function renderTopBar(
       class: 'oui-btn',
       title: 'Load a local $metadata XML or JSON CSDL file offline',
     },
-    'Upload $metadata',
+    icon('upload', 13),
+    'Upload XML',
   );
   uploadBtn.addEventListener('click', () => fileInput.click());
 
+  const hasCustomAuth = Boolean(
+    state.bearerToken.trim() || state.customHeaders.some((h) => h.key.trim()),
+  );
   const headersBtn = el(
     'button',
     {
@@ -74,7 +79,8 @@ export function renderTopBar(
       class: `oui-btn${state.headersDrawerOpen ? ' oui-btn-primary' : ''}`,
       title: 'Configure Bearer token or custom request headers',
     },
-    state.bearerToken || state.customHeaders.some((h) => h.key.trim()) ? 'Headers ●' : 'Headers',
+    icon('sliders', 13),
+    hasCustomAuth ? 'Headers (on)' : 'Headers',
   );
   headersBtn.addEventListener('click', () => {
     store.setState({ headersDrawerOpen: !state.headersDrawerOpen });
@@ -84,11 +90,11 @@ export function renderTopBar(
     'button',
     {
       type: 'button',
-      class: 'oui-btn',
-      title: 'Toggle light / dark theme',
+      class: 'oui-btn oui-btn-icon',
+      title: state.resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
       'aria-label': 'Toggle theme',
     },
-    state.resolvedTheme === 'dark' ? '☀ Light' : '☾ Dark',
+    icon(state.resolvedTheme === 'dark' ? 'sun' : 'moon', 14),
   );
   themeBtn.addEventListener('click', () => {
     const next = state.resolvedTheme === 'dark' ? 'light' : 'dark';
@@ -99,46 +105,20 @@ export function renderTopBar(
     ? el(
         'span',
         { class: 'oui-badge oui-badge-accent', title: `Parsed as ${state.model.sourceFormat}` },
-        `OData v${state.model.version}`,
+        `v${state.model.version}`,
       )
     : null;
 
-  let advisorPill: HTMLElement | null = null;
-  if (state.model) {
-    const errs = state.diagnostics.filter((d) => d.severity === 'error').length;
-    const warns = state.diagnostics.filter((d) => d.severity === 'warning').length;
-    const tips = state.diagnostics.filter((d) => d.severity === 'tip').length;
-    const cls =
-      errs > 0
-        ? 'oui-badge oui-badge-danger'
-        : warns > 0
-          ? 'oui-badge oui-badge-warning'
-          : 'oui-badge oui-badge-tip';
-    const pill = el(
-      'button',
-      {
-        type: 'button',
-        class: `oui-btn oui-btn-sm oui-btn-ghost`,
-        title: 'Open Metadata Advisor diagnostics',
-      },
-      el('span', { class: cls }, `${errs}E · ${warns}W · ${tips} tips`),
-    );
-    pill.addEventListener('click', () => store.setState({ activeTab: 'advisor' }));
-    advisorPill = pill;
-  }
-
-  const bar = el(
+  const actions = el(
     'div',
-    { class: 'oui-topbar' },
-    el('span', { class: 'oui-brand' }, el('span', { class: 'oui-brand-dot' }), 'odata-ui'),
-    form,
-    fileInput,
+    { class: 'oui-topbar-actions' },
     uploadBtn,
     headersBtn,
     versionBadge,
-    advisorPill,
     themeBtn,
   );
+
+  const bar = el('div', { class: 'oui-topbar' }, form, fileInput, actions);
   wrapper.appendChild(bar);
 
   if (state.headersDrawerOpen) {
@@ -147,8 +127,8 @@ export function renderTopBar(
     const bearerInput = el('input', {
       type: 'password',
       class: 'oui-input oui-input-mono',
-      style: 'flex:1; min-width:240px;',
-      placeholder: 'Bearer token (optional — sent as Authorization: Bearer ...)',
+      style: 'flex:1; min-width:220px;',
+      placeholder: 'Bearer token (sent as Authorization: Bearer …)',
       value: state.bearerToken,
     });
     bearerInput.addEventListener('input', () => {
@@ -158,7 +138,8 @@ export function renderTopBar(
     const addHeaderBtn = el(
       'button',
       { type: 'button', class: 'oui-btn oui-btn-sm' },
-      '+ Add Header',
+      icon('plus', 12),
+      'Header',
     );
     addHeaderBtn.addEventListener('click', () => {
       store.setState({
@@ -170,7 +151,7 @@ export function renderTopBar(
       el(
         'div',
         { class: 'oui-headers-row' },
-        el('strong', { style: 'font-size:12px; min-width:95px;' }, 'Bearer Token:'),
+        el('strong', { style: 'font-size:12px; min-width:88px;' }, 'Bearer token'),
         bearerInput,
         addHeaderBtn,
       ),
@@ -182,14 +163,14 @@ export function renderTopBar(
         class: 'oui-input oui-input-mono',
         placeholder: 'Header-Name',
         value: row.key,
-        style: 'width:180px;',
+        style: 'width:170px;',
       });
       const vInput = el('input', {
         type: 'text',
         class: 'oui-input oui-input-mono',
         placeholder: 'Value',
         value: row.value,
-        style: 'flex:1; min-width:180px;',
+        style: 'flex:1; min-width:160px;',
       });
       kInput.addEventListener('input', () => {
         const next = [...state.customHeaders];
@@ -201,7 +182,11 @@ export function renderTopBar(
         next[idx] = { key: kInput.value, value: vInput.value };
         store.setState({ customHeaders: next });
       });
-      const rmBtn = el('button', { type: 'button', class: 'oui-btn oui-btn-sm' }, '×');
+      const rmBtn = el(
+        'button',
+        { type: 'button', class: 'oui-btn oui-btn-sm', 'aria-label': 'Remove header' },
+        icon('x', 12),
+      );
       rmBtn.addEventListener('click', () => {
         store.setState({
           customHeaders: state.customHeaders.filter((_, i) => i !== idx),

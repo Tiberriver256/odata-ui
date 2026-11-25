@@ -110,27 +110,71 @@ function extractODataErrorMessage(bodyText: string, status: number, statusText: 
   return `HTTP ${status}${statusText ? ` ${statusText}` : ''}`;
 }
 
+function generateODataSessionId(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  for (let i = 0; i < 24; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)] ?? 'a';
+  }
+  return out;
+}
+
+/**
+ * services.odata.org/TripPinRESTierService responds to bare URLs with a 302 redirect
+ * that omits Access-Control-Allow-Origin, causing browsers to abort CORS fetches.
+ * Pre-seeding an IIS cookieless session segment `(S(...))` hits 200 OK with CORS headers directly.
+ */
+function ensureBrowserCorsFriendlyUrl(serviceRoot: string): string {
+  if (/^https?:\/\/services\.odata\.org\/TripPinRESTierService$/i.test(serviceRoot)) {
+    return `${serviceRoot}/(S(${generateODataSessionId()}))`;
+  }
+  return serviceRoot;
+}
+
+function formatNetworkError(err: unknown, url: string): Error {
+  if (err instanceof DOMException && err.name === 'AbortError') {
+    return err;
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+    return new Error(
+      `Could not reach ${url} from the browser (CORS or network error). Check that the server sends Access-Control-Allow-Origin headers (including on redirects), or upload the $metadata XML/JSON file locally to inspect it offline.`,
+      { cause: err },
+    );
+  }
+  return err instanceof Error ? err : new Error(msg);
+}
+
 export async function fetchMetadata(
   inputUrl: string,
   options: ClientOptions = {},
 ): Promise<MetadataFetchResult> {
-  const { serviceRoot: initialRoot, metadataUrl } = normalizeServiceRoot(inputUrl);
+  const { serviceRoot: rawRoot } = normalizeServiceRoot(inputUrl);
+  // Pre-seed session segment for TripPinRESTierService when using the browser's default fetch
+  const initialRoot = options.fetch ? rawRoot : ensureBrowserCorsFriendlyUrl(rawRoot);
+  const metadataUrl = `${initialRoot}/$metadata`;
   const headers = await resolveHeaders(options);
   if (!headers.Accept && !headers.accept) {
     headers.Accept = 'application/xml, application/json;q=0.9, */*;q=0.8';
   }
 
   const start = performance.now();
-  const response = await sendRequest(
-    metadataUrl,
-    {
-      method: 'GET',
-      headers,
-      redirect: 'follow',
-      signal: options.signal,
-    },
-    options,
-  );
+  let response: Response;
+  try {
+    response = await sendRequest(
+      metadataUrl,
+      {
+        method: 'GET',
+        headers,
+        redirect: 'follow',
+        signal: options.signal,
+      },
+      options,
+    );
+  } catch (err) {
+    throw formatNetworkError(err, metadataUrl);
+  }
+
   const raw = await response.text();
   const durationMs = Math.round(performance.now() - start);
 
@@ -177,7 +221,7 @@ export async function executeQuery(
   if (!headers.Accept && !headers.accept) {
     headers.Accept =
       options.version && !options.version.startsWith('4')
-        ? 'application/json;odata=verbose, application/json'
+        ? 'application/json;odata=verbose'
         : 'application/json;odata.metadata=minimal';
   }
 
@@ -188,17 +232,22 @@ export async function executeQuery(
   }
 
   const start = performance.now();
-  const response = await sendRequest(
-    url,
-    {
-      method,
-      headers,
-      body: bodyStr,
-      redirect: 'follow',
-      signal: options.signal,
-    },
-    options,
-  );
+  let response: Response;
+  try {
+    response = await sendRequest(
+      url,
+      {
+        method,
+        headers,
+        body: bodyStr,
+        redirect: 'follow',
+        signal: options.signal,
+      },
+      options,
+    );
+  } catch (err) {
+    throw formatNetworkError(err, url);
+  }
   const rawText = await response.text();
   const durationMs = Math.round(performance.now() - start);
 

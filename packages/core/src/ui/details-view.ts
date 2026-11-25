@@ -518,12 +518,44 @@ function renderEntityTypeDetails(
 
 export function renderDetailsView(state: ExplorerState, store: ExplorerStore): HTMLElement {
   if (!state.model) {
+    if (state.metadataError) {
+      return el(
+        'div',
+        { class: 'oui-empty' },
+        el(
+          'div',
+          { class: 'oui-banner oui-banner-error', style: 'width:100%;' },
+          el(
+            'div',
+            {},
+            el(
+              'strong',
+              { style: 'display:block; margin-bottom:4px;' },
+              'Unable to load $metadata',
+            ),
+            state.metadataError,
+          ),
+        ),
+        el(
+          'p',
+          { style: 'margin:0; font-size:12.5px; color:var(--odata-ui-text-secondary);' },
+          'Tip: You can still inspect any OData v2, v3, or v4 schema offline using the "Upload XML" button in the toolbar above.',
+        ),
+      );
+    }
     return el(
       'div',
       { class: 'oui-empty' },
-      state.metadataError
-        ? el('div', { class: 'oui-banner oui-banner-error' }, state.metadataError)
-        : 'Enter an OData service URL or upload a $metadata file to begin.',
+      el(
+        'strong',
+        { style: 'font-size:15px; color:var(--odata-ui-text);' },
+        'Inspect any OData service',
+      ),
+      el(
+        'p',
+        { style: 'margin:0;' },
+        'Enter an OData service root URL (or /$metadata URL) above and select Load, or upload a local XML/JSON CSDL document to browse types, diagrams, and Metadata Advisor diagnostics offline.',
+      ),
     );
   }
 

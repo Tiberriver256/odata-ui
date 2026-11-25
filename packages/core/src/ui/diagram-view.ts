@@ -363,7 +363,7 @@ export function renderDiagramView(state: ExplorerState, store: ExplorerStore): H
 
     node.properties.forEach((p, idx) => {
       const py = 47 + idx * 19;
-      const prefix = p.isKey ? '🔑 ' : '· ';
+      const prefix = p.isKey ? 'PK ' : '';
       g.appendChild(
         svgEl(
           'text',

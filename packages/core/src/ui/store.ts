@@ -49,6 +49,7 @@ export interface ExplorerState {
   theme: ThemeMode;
   resolvedTheme: 'light' | 'dark';
   headersDrawerOpen: boolean;
+  sidebarOpenMobile: boolean;
   bearerToken: string;
   customHeaders: CustomHeaderRow[];
 
@@ -170,6 +171,7 @@ export class ExplorerStore {
       theme,
       resolvedTheme: resolveEffectiveTheme(theme),
       headersDrawerOpen: false,
+      sidebarOpenMobile: false,
       bearerToken: '',
       customHeaders: [],
       diagramFocusType: null,

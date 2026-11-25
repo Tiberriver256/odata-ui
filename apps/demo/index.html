@@ -3,61 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>odata-ui — Native OData Explorer, Query Builder &amp; Metadata Advisor</title>
+    <title>odata-ui — Native OData Explorer &amp; Metadata Advisor</title>
     <meta
       name="description"
       content="A swagger-ui style explorer built natively for OData: metadata browser, relationship diagram, visual query builder, and CSDL metadata advisor."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <header class="site-header">
-      <div class="site-brand">
-        <span class="site-logo" aria-hidden="true"></span>
-        <div>
-          <strong>odata-ui</strong>
-          <span class="site-tagline">Native OData Explorer &amp; Metadata Advisor</span>
-        </div>
+      <div class="site-left">
+        <a href="#explorer" class="site-brand">
+          <svg
+            class="site-mark"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            <path d="M10 6.5h4" />
+            <path d="M17.5 10v4" />
+          </svg>
+          <span>odata-ui</span>
+        </a>
+
+        <label class="preset-wrap" id="preset-wrap">
+          <span class="sr-only">Public OData service preset</span>
+          <select id="preset-select" class="preset-select" aria-label="Public OData preset">
+            <option value="https://services.odata.org/TripPinRESTierService" selected>
+              TripPin RESTier (v4)
+            </option>
+            <option value="https://services.odata.org/V4/TripPinServiceRW">
+              TripPin V4 RW (Capabilities)
+            </option>
+            <option value="https://services.odata.org/V4/Northwind/Northwind.svc">
+              Northwind (v4)
+            </option>
+            <option value="https://services.odata.org/V3/OData/OData.svc">OData Sample (v3)</option>
+          </select>
+        </label>
       </div>
 
       <nav class="site-nav" aria-label="Primary navigation">
-        <a href="#explorer" class="nav-link active" id="nav-explorer">Live Explorer</a>
+        <a href="#explorer" class="nav-link active" id="nav-explorer">Explorer</a>
         <a href="#docs" class="nav-link" id="nav-docs">Docs</a>
-        <a href="#metadata-guide" class="nav-link" id="nav-guide">Better OData Metadata</a>
+        <a href="#metadata-guide" class="nav-link" id="nav-guide">Metadata Guide</a>
         <a
           href="https://github.com/Tiberriver256/odata-ui"
           class="nav-link"
           target="_blank"
           rel="noreferrer"
         >
-          GitHub ↗
+          GitHub
         </a>
       </nav>
     </header>
-
-    <div class="preset-bar" id="preset-bar">
-      <span class="preset-label">Public OData Presets:</span>
-      <button
-        type="button"
-        class="preset-btn active"
-        data-url="https://services.odata.org/TripPinRESTierService"
-      >
-        TripPin RESTier (v4)
-      </button>
-      <button
-        type="button"
-        class="preset-btn"
-        data-url="https://services.odata.org/V4/TripPinServiceRW"
-      >
-        TripPin V4 RW (Capabilities &amp; Containment)
-      </button>
-      <button
-        type="button"
-        class="preset-btn"
-        data-url="https://services.odata.org/V3/OData/OData.svc"
-      >
-        OData V3 Sample (Associations)
-      </button>
-    </div>
 
     <main class="site-main">
       <section id="view-explorer" class="view-explorer">

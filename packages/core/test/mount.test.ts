@@ -25,7 +25,7 @@ describe('ODataUI mount & Shadow DOM UI', () => {
     expect(shadow).not.toBeNull();
     expect(shadow?.querySelector('.oui-topbar')).not.toBeNull();
     expect(shadow?.textContent).toContain('People');
-    expect(shadow?.textContent).toContain('OData v4.0');
+    expect(shadow?.textContent).toContain('v4.0');
 
     // Switch to Diagram tab
     const tabs = Array.from(shadow!.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
@@ -43,9 +43,9 @@ describe('ODataUI mount & Shadow DOM UI', () => {
     );
     expect(urlInput?.value).toContain('/People?');
 
-    // Switch to Metadata Advisor tab
+    // Switch to Advisor tab
     const advisorTab = Array.from(shadow!.querySelectorAll<HTMLButtonElement>('[role="tab"]')).find(
-      (t) => t.textContent?.includes('Metadata Advisor'),
+      (t) => t.textContent?.includes('Advisor'),
     );
     advisorTab?.click();
     expect(shadow?.textContent).toContain('OData Metadata Advisor');

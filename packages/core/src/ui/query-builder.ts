@@ -870,7 +870,11 @@ export function renderQueryBuilder(
       el(
         'div',
         { class: 'oui-banner oui-banner-warning' },
-        `⚠ "${ast.boundOperation?.fullName ?? ast.targetName}" is a POST Action that may modify or reset server data (e.g. ResetDataSource). Execution requires explicit confirmation.`,
+        el(
+          'span',
+          {},
+          `"${ast.boundOperation?.fullName ?? ast.targetName}" is a POST Action that may modify or reset server data (such as ResetDataSource). Execution asks for confirmation before sending.`,
+        ),
       ),
     );
   }

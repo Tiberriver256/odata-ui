@@ -126,15 +126,6 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
     },
   ];
 
-  const diagTargets = new Map<string, 'error' | 'warning' | 'tip'>();
-  for (const d of state.diagnostics) {
-    if (!d.target) continue;
-    const prev = diagTargets.get(d.target);
-    if (!prev || d.severity === 'error' || (d.severity === 'warning' && prev === 'tip')) {
-      diagTargets.set(d.target, d.severity);
-    }
-  }
-
   for (const group of groups) {
     const filtered = query
       ? group.items.filter((i) => i.label.toLowerCase().includes(query))
@@ -145,7 +136,6 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
     for (const item of filtered) {
       const isActive =
         state.selected?.kind === item.selection.kind && state.selected?.id === item.selection.id;
-      const sev = diagTargets.get(item.selection.id);
 
       const li = el(
         'li',
@@ -160,15 +150,6 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
               item.sublabel,
             )
           : null,
-        sev === 'error'
-          ? el('span', { class: 'oui-badge oui-badge-danger', title: 'Has metadata error' }, '!')
-          : sev === 'warning'
-            ? el(
-                'span',
-                { class: 'oui-badge oui-badge-warning', title: 'Has metadata warning' },
-                '!',
-              )
-            : null,
       );
 
       if (item.queryTarget) {
@@ -182,7 +163,11 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
           e.stopPropagation();
           const ast = createQueryAstForTarget(model, qTarget.kind, qTarget.name);
           store.updateQueryAst(ast);
-          store.setState({ selected: item.selection, activeTab: 'query' });
+          store.setState({
+            selected: item.selection,
+            activeTab: 'query',
+            sidebarOpenMobile: false,
+          });
         });
         li.appendChild(qBtn);
       }
@@ -195,6 +180,7 @@ export function renderMetadataTree(state: ExplorerState, store: ExplorerStore): 
         store.setState({
           selected: item.selection,
           activeTab: state.activeTab === 'diagram' ? 'diagram' : 'details',
+          sidebarOpenMobile: false,
         });
       });
 

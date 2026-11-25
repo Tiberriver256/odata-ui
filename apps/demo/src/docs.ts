@@ -11,25 +11,24 @@ export function renderDocsPage(
 
   if (section === 'metadata-guide') {
     root.innerHTML = `
-      <div class="docs-hero">
-        <h1>Building Better OData <code>$metadata</code></h1>
+      <header class="docs-header">
+        <h1>Writing Better OData <code>$metadata</code></h1>
         <p>
-          OData services shine when their CSDL <code>$metadata</code> document is complete, self-describing,
-          and honest about query capabilities. <strong>odata-ui</strong> includes a built-in
-          <strong>Metadata Advisor</strong> that inspects any live or uploaded <code>$metadata</code> file and
-          highlights high-leverage improvements for API builders.
+          An OData service is only as discoverable as its CSDL <code>$metadata</code> document.
+          The built-in <strong>Advisor</strong> tab in <code>odata-ui</code> audits live or uploaded
+          metadata and highlights the vocabulary annotations and schema details that matter most
+          for clients, code generators, and explorers.
         </p>
-      </div>
+      </header>
 
-      <div class="docs-card">
-        <h2>1. Declare <code>Org.OData.Capabilities.V1</code> on Every EntitySet</h2>
+      <section class="docs-section">
+        <h2>Declare <code>Org.OData.Capabilities.V1</code> on every EntitySet</h2>
         <p>
-          Clients and explorers cannot tell from an <code>EntitySet</code> alone whether <code>$filter</code>,
-          <code>$search</code>, <code>$expand</code>, or <code>POST/PATCH/DELETE</code> are enabled. Adding
-          OASIS Capabilities annotations prevents runtime <code>400</code>/<code>501</code> surprises and
-          improves generated OpenAPI/Swagger documentation.
+          Without Capabilities annotations, clients have no way to know whether <code>$filter</code>,
+          <code>$search</code>, <code>$expand</code>, or writes are supported until requests fail at
+          runtime with <code>400</code> or <code>501</code>.
         </p>
-        <pre>&lt;EntitySet Name="People" EntityType="Trippin.Person"&gt;
+        <pre><code>&lt;EntitySet Name="People" EntityType="Trippin.Person"&gt;
   &lt;Annotation Term="Org.OData.Capabilities.V1.FilterRestrictions"&gt;
     &lt;Record&gt;
       &lt;PropertyValue Property="Filterable" Bool="true" /&gt;
@@ -40,162 +39,157 @@ export function renderDocsPage(
       &lt;PropertyValue Property="Searchable" Bool="true" /&gt;
     &lt;/Record&gt;
   &lt;/Annotation&gt;
-&lt;/EntitySet&gt;</pre>
+&lt;/EntitySet&gt;</code></pre>
         <button type="button" class="docs-cta" data-preset="https://services.odata.org/V4/TripPinServiceRW">
-          Compare Capabilities live in TripPin V4 RW →
+          Inspect Capabilities in TripPin V4 RW
         </button>
-      </div>
+      </section>
 
-      <div class="docs-card">
-        <h2>2. Bind Non-Contained Navigation Properties (<code>NavigationPropertyBinding</code>)</h2>
+      <section class="docs-section">
+        <h2>Bind non-contained navigation properties</h2>
         <p>
-          In OData v4, every non-contained <code>NavigationProperty</code> on an entity type exposed through
-          an <code>EntitySet</code> should have a matching <code>&lt;NavigationPropertyBinding&gt;</code>.
-          Without it, clients cannot reliably resolve canonical URLs or know which EntitySet backs an
-          expanded relationship. If child entities only exist inside a parent, set <code>ContainsTarget="true"</code>.
+          In OData v4, every non-contained <code>NavigationProperty</code> exposed through an
+          <code>EntitySet</code> should declare a <code>&lt;NavigationPropertyBinding&gt;</code>.
+          For child entities that only exist inside a parent, set <code>ContainsTarget="true"</code>.
         </p>
-        <pre>&lt;EntitySet Name="People" EntityType="Trippin.Person"&gt;
+        <pre><code>&lt;EntitySet Name="People" EntityType="Trippin.Person"&gt;
   &lt;NavigationPropertyBinding Path="Friends" Target="People" /&gt;
   &lt;NavigationPropertyBinding Path="BestFriend" Target="People" /&gt;
-&lt;/EntitySet&gt;</pre>
-      </div>
+&lt;/EntitySet&gt;</code></pre>
+      </section>
 
-      <div class="docs-card">
-        <h2>3. Add <code>Org.OData.Core.V1.Description</code> &amp; Document Action Side Effects</h2>
+      <section class="docs-section">
+        <h2>Document types and POST actions with <code>Core.Description</code></h2>
         <p>
-          Adding <code>Core.Description</code> annotations to EntitySets, EntityTypes, Properties, and
-          especially <code>POST</code> Actions turns <code>$metadata</code> into living documentation for
-          explorers, SDK generators, and AI coding assistants.
+          <code>Org.OData.Core.V1.Description</code> turns <code>$metadata</code> into living
+          documentation. It is especially important on <code>POST</code> Actions so callers understand
+          side effects before invoking them.
         </p>
-        <pre>&lt;Action Name="ResetDataSource"&gt;
+        <pre><code>&lt;Action Name="ResetDataSource"&gt;
   &lt;Annotation Term="Org.OData.Core.V1.Description"
-              String="Resets the session sample database back to its initial seed data." /&gt;
-&lt;/Action&gt;</pre>
-      </div>
+              String="Resets the session sample database back to its seed state." /&gt;
+&lt;/Action&gt;</code></pre>
+      </section>
 
-      <div class="docs-card">
-        <h2>4. Pair Bidirectional Relationships with <code>Partner</code> &amp; Precise Facets</h2>
+      <section class="docs-section">
+        <h2>Tighten keys, inverse relationships, and numeric facets</h2>
         <ul>
-          <li><strong><code>Partner="..."</code></strong> links inverse navigation properties so ER diagrams and ORMs understand 1:N / M:N pairs.</li>
-          <li><strong>Non-nullable keys</strong>: CSDL defaults <code>Nullable</code> to <code>true</code>. Always declare <code>Nullable="false"</code> on key properties (and consider <code>Core.Computed</code> / <code>Core.Immutable</code>).</li>
-          <li><strong>Decimal facets</strong>: Specify <code>Precision</code> and <code>Scale</code> on <code>Edm.Decimal</code> properties to prevent rounding ambiguity in BI and financial clients.</li>
-          <li><strong>Optimistic Concurrency</strong>: Declare <code>Org.OData.Core.V1.OptimisticConcurrency</code> on EntitySets that enforce ETags.</li>
+          <li><strong>Pair inverse navigations with <code>Partner</code></strong> so diagrams and ORMs recognize bidirectional relationships instead of two unrelated edges.</li>
+          <li><strong>Mark keys <code>Nullable="false"</code></strong>: CSDL defaults properties to nullable unless stated explicitly.</li>
+          <li><strong>Declare <code>Precision</code> and <code>Scale</code> on <code>Edm.Decimal</code></strong> to avoid rounding drift in BI tools and generated clients.</li>
+          <li><strong>Publish <code>Core.OptimisticConcurrency</code></strong> on EntitySets that enforce ETags.</li>
         </ul>
-      </div>
+      </section>
 
-      <div class="docs-card">
-        <h2>5. ASP.NET Core OData Quick Tip</h2>
+      <section class="docs-section">
+        <h2>ASP.NET Core OData tip</h2>
         <p>
-          When using <code>ODataConventionModelBuilder</code> in ASP.NET Core OData, you can attach vocabulary
-          annotations (like <code>Core.Description</code> and <code>Capabilities.V1</code>) to the built
-          <code>IEdmModel</code> before registering it with <code>AddRouteComponents</code>, or via
-          <code>Microsoft.OData.ModelBuilder.CapabilitiesVocabularyConstants</code>.
+          With <code>ODataConventionModelBuilder</code>, attach OASIS vocabulary annotations to the
+          built <code>IEdmModel</code> before passing it to <code>AddRouteComponents</code> using
+          <code>Microsoft.OData.ModelBuilder.CapabilitiesVocabularyConstants</code> and
+          <code>CoreVocabularyModel</code>.
         </p>
-      </div>
+      </section>
     `;
   } else {
     root.innerHTML = `
-      <div class="docs-hero">
+      <header class="docs-header">
         <h1><code>odata-ui</code> Documentation</h1>
         <p>
-          Drop-in, framework-agnostic OData explorer: browse <code>$metadata</code>, visualize entity
-          relationships, build typed OData queries visually, execute against live services, and audit
-          metadata quality.
+          Drop-in, framework-agnostic OData explorer with Shadow DOM isolation, zero core runtime
+          dependencies, v2/v3/v4 CSDL parsing, visual query building, and metadata diagnostics.
         </p>
-      </div>
+      </header>
 
-      <div class="docs-card">
-        <h2>Drop-in Standalone Script (swagger-ui style)</h2>
+      <section class="docs-section">
+        <h2>Standalone script (swagger-ui style)</h2>
         <p>
           The standalone IIFE bundle inlines its Shadow DOM stylesheet and assigns
-          <code>globalThis.ODataUI</code> directly as a function — one script tag is the entire integration.
+          <code>globalThis.ODataUI</code> directly as a function.
         </p>
-        <pre>&lt;div id="explorer" style="height: 85vh"&gt;&lt;/div&gt;
+        <pre><code>&lt;div id="explorer" style="height: 85vh"&gt;&lt;/div&gt;
 &lt;script src="odata-ui.standalone.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   ODataUI({
     url: 'https://services.odata.org/TripPinRESTierService',
     dom_id: 'explorer',
-    theme: 'auto', // 'light' | 'dark' | 'auto'
+    theme: 'auto',
   });
-&lt;/script&gt;</pre>
-      </div>
+&lt;/script&gt;</code></pre>
+      </section>
 
-      <div class="docs-card">
-        <h2>ESM, React, and Vue Wrappers</h2>
+      <section class="docs-section">
+        <h2>ESM, React, and Vue</h2>
         <h3>Plain TypeScript / ESM</h3>
-        <pre>import { mount } from '@odata-ui/core';
+        <pre><code>import { mount } from '@odata-ui/core';
 
 const instance = mount(document.getElementById('explorer')!, {
   url: 'https://services.odata.org/TripPinRESTierService',
   headers: () =&gt; ({ Authorization: \`Bearer \${getToken()}\` }),
 });
 
-// Later:
-instance.unmount();</pre>
+instance.unmount();</code></pre>
 
         <h3>React (<code>@odata-ui/react</code>)</h3>
-        <pre>import { ODataUI } from '@odata-ui/react';
+        <pre><code>import { ODataUI } from '@odata-ui/react';
 
 export function ApiExplorer() {
   return &lt;ODataUI url="https://services.odata.org/TripPinRESTierService" theme="auto" /&gt;;
-}</pre>
+}</code></pre>
 
         <h3>Vue 3 (<code>@odata-ui/vue</code>)</h3>
-        <pre>&lt;script setup lang="ts"&gt;
+        <pre><code>&lt;script setup lang="ts"&gt;
 import { ODataUI } from '@odata-ui/vue';
 &lt;/script&gt;
 
 &lt;template&gt;
   &lt;ODataUI url="https://services.odata.org/TripPinRESTierService" /&gt;
-&lt;/template&gt;</pre>
-      </div>
+&lt;/template&gt;</code></pre>
+      </section>
 
-      <div class="docs-card">
-        <h2>Options &amp; Instance API</h2>
+      <section class="docs-section">
+        <h2>Options reference</h2>
         <table class="docs-table">
           <thead>
             <tr><th>Option</th><th>Type</th><th>Description</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>url</code></td><td><code>string</code></td><td>Service root or <code>/$metadata</code> URL. Redirects (e.g. TripPin session prefixes) are automatically adopted.</td></tr>
-            <tr><td><code>metadata</code></td><td><code>string</code></td><td>Raw XML (v2/v3/v4) or JSON CSDL (v4/v4.01) string for offline browsing.</td></tr>
-            <tr><td><code>dom_id</code> / <code>domNode</code></td><td><code>string | HTMLElement</code></td><td>Target container element (when calling <code>ODataUI(options)</code>).</td></tr>
-            <tr><td><code>headers</code></td><td><code>Record | () =&gt; Record | Promise</code></td><td>Pass-through HTTP headers for metadata and query requests.</td></tr>
-            <tr><td><code>requestInterceptor</code></td><td><code>(req) =&gt; req | Promise</code></td><td>Inspect or rewrite outgoing fetch requests before dispatch.</td></tr>
+            <tr><td><code>url</code></td><td><code>string</code></td><td>Service root or <code>/$metadata</code> URL. Redirected session roots are adopted automatically.</td></tr>
+            <tr><td><code>metadata</code></td><td><code>string</code></td><td>Raw XML (v2/v3/v4) or JSON CSDL (v4/v4.01) document for offline browsing.</td></tr>
+            <tr><td><code>dom_id</code> / <code>domNode</code></td><td><code>string | HTMLElement</code></td><td>Mount container when invoking <code>ODataUI(options)</code>.</td></tr>
+            <tr><td><code>headers</code></td><td><code>Record | () =&gt; Record | Promise</code></td><td>Custom HTTP headers forwarded on metadata and data requests.</td></tr>
+            <tr><td><code>requestInterceptor</code></td><td><code>(req) =&gt; req | Promise</code></td><td>Modify outgoing fetch requests prior to dispatch.</td></tr>
             <tr><td><code>theme</code></td><td><code>'light' | 'dark' | 'auto'</code></td><td>Color theme; defaults to <code>'auto'</code>.</td></tr>
           </tbody>
         </table>
-      </div>
+      </section>
 
-      <div class="docs-card">
-        <h2>Theming with CSS Custom Properties</h2>
+      <section class="docs-section">
+        <h2>Theming with CSS custom properties</h2>
         <p>
-          All styles live inside an open Shadow Root, and CSS variables inherit through Shadow DOM so you can
-          recolor the explorer from your host page without forking:
+          Custom properties inherit across the Shadow Root boundary, so any host app can recolor the
+          explorer without forking styles:
         </p>
-        <pre>#explorer {
-  --odata-ui-accent: #0f766e;
-  --odata-ui-accent-hover: #115e59;
-  --odata-ui-radius: 10px;
-  --odata-ui-font-sans: 'Inter', system-ui, sans-serif;
-}</pre>
-      </div>
+        <pre><code>#explorer {
+  --odata-ui-accent: #0d746e;
+  --odata-ui-accent-hover: #0a5c57;
+  --odata-ui-radius: 6px;
+}</code></pre>
+      </section>
 
-      <div class="docs-card">
-        <h2>Programmatic Core Utilities</h2>
-        <p>Use the parser, Metadata Advisor, and query printer headlessly in Node/CI or custom apps:</p>
-        <pre>import { parseMetadata, analyzeMetadata, printQuery } from '@odata-ui/core';
+      <section class="docs-section">
+        <h2>Headless core utilities</h2>
+        <pre><code>import { parseMetadata, analyzeMetadata, printQuery } from '@odata-ui/core';
 
 const model = parseMetadata(xmlOrJsonMetadata);
 const diagnostics = analyzeMetadata(model);
 const { readableUrl, fetchUrl } = printQuery('https://example.org/odata', queryAst, {
   version: model.version,
-});</pre>
+});</code></pre>
         <button type="button" class="docs-cta" data-preset="https://services.odata.org/TripPinRESTierService">
-          Open Live TripPin Demo →
+          Open Live TripPin Explorer
         </button>
-      </div>
+      </section>
     `;
   }
 

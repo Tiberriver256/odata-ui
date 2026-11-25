@@ -10,6 +10,7 @@ import { renderAdvisorView } from './ui/advisor-view.js';
 import { renderDetailsView } from './ui/details-view.js';
 import { renderDiagramView } from './ui/diagram-view.js';
 import { clear, el } from './ui/dom.js';
+import { icon } from './ui/icons.js';
 import { renderMetadataTree } from './ui/metadata-tree.js';
 import { renderQueryBuilder } from './ui/query-builder.js';
 import { renderResultsView } from './ui/results-view.js';
@@ -188,18 +189,41 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
     );
 
     const sidebar = renderMetadataTree(state, store);
+    if (state.sidebarOpenMobile) {
+      sidebar.classList.add('open');
+    }
+
+    const menuBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'oui-btn oui-btn-sm oui-btn-ghost oui-mobile-menu-btn',
+        'aria-label': 'Toggle schema tree',
+      },
+      icon('menu', 14),
+      'Schema',
+    );
+    menuBtn.addEventListener('click', () => {
+      store.setState({ sidebarOpenMobile: !state.sidebarOpenMobile });
+    });
 
     // Tabs
-    const tabsDef: Array<{ id: ActiveTab; label: string; count?: number }> = [
-      { id: 'details', label: 'Details' },
-      { id: 'diagram', label: 'Diagram' },
-      { id: 'query', label: 'Query' },
-      { id: 'advisor', label: 'Metadata Advisor', count: state.diagnostics.length },
+    const tabsDef: Array<{
+      id: ActiveTab;
+      label: string;
+      iconName: 'layers' | 'share' | 'terminal' | 'shield';
+      count?: number;
+    }> = [
+      { id: 'details', label: 'Details', iconName: 'layers' },
+      { id: 'diagram', label: 'Diagram', iconName: 'share' },
+      { id: 'query', label: 'Query', iconName: 'terminal' },
+      { id: 'advisor', label: 'Advisor', iconName: 'shield', count: state.diagnostics.length },
     ];
 
     const tabBar = el(
       'div',
       { class: 'oui-tabs', role: 'tablist' },
+      menuBtn,
       ...tabsDef.map((t) => {
         const btn = el(
           'button',
@@ -209,10 +233,13 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
             'aria-selected': state.activeTab === t.id ? 'true' : 'false',
             class: `oui-tab${state.activeTab === t.id ? ' active' : ''}`,
           },
+          icon(t.iconName, 13),
           t.label,
           t.count !== undefined && state.model ? el('span', { class: 'oui-badge' }, t.count) : null,
         );
-        btn.addEventListener('click', () => store.setState({ activeTab: t.id }));
+        btn.addEventListener('click', () =>
+          store.setState({ activeTab: t.id, sidebarOpenMobile: false }),
+        );
         return btn;
       }),
     );
@@ -221,51 +248,79 @@ export function mount(element: HTMLElement, options: ODataUIMountOptions = {}): 
       class: state.activeTab === 'diagram' ? 'oui-content oui-content-flush' : 'oui-content',
     });
 
-    if (state.metadataError && state.activeTab !== 'details') {
-      content.appendChild(el('div', { class: 'oui-banner oui-banner-error' }, state.metadataError));
-    }
-
-    if (state.activeTab === 'details') {
-      content.appendChild(renderDetailsView(state, store));
-    } else if (state.activeTab === 'diagram') {
-      content.appendChild(renderDiagramView(state, store));
-    } else if (state.activeTab === 'advisor') {
-      content.appendChild(renderAdvisorView(state, store));
+    if (state.loadingMetadata && !state.model) {
+      content.appendChild(
+        el(
+          'div',
+          {
+            class: 'oui-skeleton-wrap',
+            style: state.activeTab === 'diagram' ? 'padding:18px 20px;' : '',
+          },
+          el('div', { class: 'oui-skeleton-line', style: 'width:38%; height:22px;' }),
+          el('div', { class: 'oui-skeleton-line', style: 'width:62%;' }),
+          el('div', {
+            class: 'oui-skeleton-line',
+            style: 'width:100%; height:140px; margin-top:8px;',
+          }),
+        ),
+      );
     } else {
-      content.appendChild(
-        renderQueryBuilder(state, store, {
-          onRunQuery: (url, method, body) => {
-            void runQuery(url, method, body);
-          },
-        }),
-      );
-      content.appendChild(
-        renderResultsView(state, store, {
-          onFollowNextLink: (nextLink) => {
-            const currentUrl = state.queryResult?.url ?? state.editableUrl;
-            void runQuery(nextLink, 'GET', undefined, currentUrl);
-          },
-          onPreviousPage: () => {
-            const stack = [...state.pageStack];
-            const prevUrl = stack.pop();
-            if (!prevUrl) return;
-            store.setState({ pageStack: stack });
-            void runQuery(prevUrl, 'GET');
-          },
-          onOpenNavUrl: (navUrl) => {
-            store.setState({
-              editableUrl: navUrl,
-              urlManuallyEdited: true,
-              activeTab: 'query',
-            });
-            void runQuery(navUrl, 'GET');
-          },
-        }),
-      );
+      if (state.metadataError && state.activeTab !== 'details') {
+        content.appendChild(
+          el(
+            'div',
+            { class: 'oui-banner oui-banner-error' },
+            icon('alert', 15),
+            el('span', {}, state.metadataError),
+          ),
+        );
+      }
+
+      if (state.activeTab === 'details') {
+        content.appendChild(renderDetailsView(state, store));
+      } else if (state.activeTab === 'diagram') {
+        content.appendChild(renderDiagramView(state, store));
+      } else if (state.activeTab === 'advisor') {
+        content.appendChild(renderAdvisorView(state, store));
+      } else {
+        content.appendChild(
+          renderQueryBuilder(state, store, {
+            onRunQuery: (url, method, body) => {
+              void runQuery(url, method, body);
+            },
+          }),
+        );
+        content.appendChild(
+          renderResultsView(state, store, {
+            onFollowNextLink: (nextLink) => {
+              const currentUrl = state.queryResult?.url ?? state.editableUrl;
+              void runQuery(nextLink, 'GET', undefined, currentUrl);
+            },
+            onPreviousPage: () => {
+              const stack = [...state.pageStack];
+              const prevUrl = stack.pop();
+              if (!prevUrl) return;
+              store.setState({ pageStack: stack });
+              void runQuery(prevUrl, 'GET');
+            },
+            onOpenNavUrl: (navUrl) => {
+              store.setState({
+                editableUrl: navUrl,
+                urlManuallyEdited: true,
+                activeTab: 'query',
+              });
+              void runQuery(navUrl, 'GET');
+            },
+          }),
+        );
+      }
     }
 
     const main = el('main', { class: 'oui-main' }, tabBar, content);
-    root.appendChild(el('div', { class: 'oui-body' }, sidebar, main));
+    const backdrop = state.sidebarOpenMobile ? el('div', { class: 'oui-sidebar-backdrop' }) : null;
+    backdrop?.addEventListener('click', () => store.setState({ sidebarOpenMobile: false }));
+
+    root.appendChild(el('div', { class: 'oui-body' }, sidebar, backdrop, main));
 
     if (focusInfo) {
       const selector = focusInfo.ariaLabel

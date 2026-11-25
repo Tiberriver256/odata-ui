@@ -6,11 +6,11 @@ const DEFAULT_URL = 'https://services.odata.org/TripPinRESTierService';
 
 const explorerView = document.getElementById('view-explorer') as HTMLElement;
 const docsView = document.getElementById('view-docs') as HTMLElement;
-const presetBar = document.getElementById('preset-bar') as HTMLElement;
+const presetWrap = document.getElementById('preset-wrap') as HTMLElement;
+const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
 const navExplorer = document.getElementById('nav-explorer') as HTMLAnchorElement;
 const navDocs = document.getElementById('nav-docs') as HTMLAnchorElement;
 const navGuide = document.getElementById('nav-guide') as HTMLAnchorElement;
-const presetButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('.preset-btn'));
 
 const explorer: ODataUIInstance = ODataUI({
   url: DEFAULT_URL,
@@ -19,18 +19,15 @@ const explorer: ODataUIInstance = ODataUI({
 });
 
 function selectPreset(url: string): void {
-  for (const btn of presetButtons) {
-    btn.classList.toggle('active', btn.dataset.url === url);
-  }
+  presetSelect.value = url;
   void explorer.setUrl(url);
 }
 
-for (const btn of presetButtons) {
-  btn.addEventListener('click', () => {
-    const url = btn.dataset.url;
-    if (url) selectPreset(url);
-  });
-}
+presetSelect.addEventListener('change', () => {
+  if (presetSelect.value) {
+    selectPreset(presetSelect.value);
+  }
+});
 
 function syncRoute(): void {
   const hash = window.location.hash || '#explorer';
@@ -43,7 +40,7 @@ function syncRoute(): void {
 
   if (isDocs || isGuide) {
     explorerView.hidden = true;
-    presetBar.hidden = true;
+    presetWrap.hidden = true;
     docsView.hidden = false;
     docsView.innerHTML = '';
     docsView.appendChild(
@@ -57,7 +54,7 @@ function syncRoute(): void {
   } else {
     docsView.hidden = true;
     explorerView.hidden = false;
-    presetBar.hidden = false;
+    presetWrap.hidden = false;
   }
 }
 
